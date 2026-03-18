@@ -3,11 +3,14 @@ const Product = require('../models/ProductModel')
 const createProduct = (newProduct) => {
     return new Promise(async (resolve, reject) => {
         // Bổ sung discount vào hàm tạo
-        const { name, image, type, countInStock, price, rating, description, discount } = newProduct
+        const { name, image, gallery, type, countInStock, price, rating, description, discount } = newProduct
         try {
             const checkProduct = await Product.findOne({ name: name })
             if (checkProduct !== null) { resolve({ status: 'OK', message: 'The name of product is already' }) }
-            const createdProduct = await Product.create({ name, image, type, countInStock, price, rating, description, discount })
+            const normalizedGallery = Array.isArray(gallery)
+                ? gallery.filter((item) => typeof item === 'string' && item.trim()).slice(0, 6)
+                : []
+            const createdProduct = await Product.create({ name, image, gallery: normalizedGallery, type, countInStock, price, rating, description, discount })
             if (createdProduct) { resolve({ status: 'OK', message: 'SUCCESS', data: createdProduct }) }
         } catch (e) { reject(e) }
     })
@@ -18,7 +21,11 @@ const updateProduct = (id, data) => {
         try {
             const checkProduct = await Product.findOne({ _id: id })
             if (checkProduct === null) { resolve({ status: 'OK', message: 'The product is not defined' }) }
-            const updatedProduct = await Product.findByIdAndUpdate(id, data, { new: true })
+            const payload = { ...data }
+            if (Array.isArray(payload.gallery)) {
+                payload.gallery = payload.gallery.filter((item) => typeof item === 'string' && item.trim()).slice(0, 6)
+            }
+            const updatedProduct = await Product.findByIdAndUpdate(id, payload, { new: true })
             resolve({ status: 'OK', message: 'SUCCESS', data: updatedProduct })
         } catch (e) { reject(e) }
     })
